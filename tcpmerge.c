@@ -28,7 +28,9 @@ typedef struct PCAPFILE_TS
 
 } PCAPFILE_TS_t;
 
-
+int gen_test();
+int testing();
+int check_exists_data_out_file();
 unsigned long tm_to_seconds(uint32_t  ts_usec)
 {
    time_t tt = ts_usec;
@@ -216,7 +218,20 @@ long int pcap_files_merge_two(char *pcp_src_path1, char *pcp_src_path2, char *pc
     lpcap_close_file(pfout);
     return count_out_packets;
 }
-int gen_test();
+
+char test_file_names[3][100]= 
+{
+"./pcaplibtestfile0.pcap" ,
+"./pcaplibtestfile1.pcap" ,
+"./pcaplibtestfile2.pcap" ,
+
+};
+char test_file_out[]= "./pout.pcap";
+#define  PKTS_COUNT   50 
+int test_count_packets[]={PKTS_COUNT, PKTS_COUNT/2,PKTS_COUNT/3};
+int test_vals[]={0, 100,200};
+int test_res_count[sizeof(test_count_packets)/sizeof(test_count_packets[0])]={0, 0,0};
+
 int main(int argc, char **args)
 {
     char in_f_paths[40][1024 * 10];
@@ -225,9 +240,23 @@ int main(int argc, char **args)
     unsigned long int count_result_packs = 0;
     int i = 0;
 
+#ifdef    TCPMERGE_TEST
+          printf("TESTING MODE");
+          for(i = 0;i< sizeof(test_file_names)/sizeof(test_file_names[0]); i++)
+          {
+              memcpy(in_f_paths[i] ,test_file_names[i], sizeof(test_file_names[i]));
+          }
+          strcpy(out_f_path, test_file_out);
+          in_f_paths_len = sizeof(test_file_names)/sizeof(test_file_names[0]);
+          printf(" generate test data ...");
+          gen_test();
+          printf(" ok\n");
+#else      
+  
+          
     if (argc == 1)
     {
-          gen_test();
+        
         printf("\n\n\n\ttcpmerge  -  merge a several pcap files.\n\tUsing: tcpmerge path_of_file1 path_of_file2 path_of_file3 _path_of_out_file\n\n\n\n\n");
         return 0;
     }
@@ -240,7 +269,9 @@ int main(int argc, char **args)
     {
         printf(" in_f_paths %s\n", in_f_paths[i]);
     }
-    strcpy(out_f_path, args[argc - 1]);
+   strcpy(out_f_path, args[argc - 1]);
+#endif
+   
     printf(" out_f_path %s\n", out_f_path);
 
     char first_file_p[1024 * 10];
@@ -302,15 +333,23 @@ int main(int argc, char **args)
         remove(out_tmp);
     }
     printf("\n finish ,   %li packets merged\n", count_result_packs);
- 
+#ifdef TCPMERGE_TEST
+    printf(" TEST [exist all packets] ");
+   int tr =  check_exists_data_out_file();
+   if(tr) printf(" errors %d\n\n" , tr );
+   else 
+       printf("   Ok\n" );
+#endif    
     return 0;
 }
+
 
 int gen_test()
 {
   int i=0;
-  const int  PKTS_COUNT = 100;
+ 
   const int udp_data_sz = 1440;// udp data size
+ 
   ethernet_data_t eda;
   eda.len = udp_data_sz +(sizeof(eth_frame_t)+sizeof(ip_packet_t))+8;//34 -  headers len
 
@@ -333,32 +372,51 @@ int gen_test()
   npf.data_len = sizeof(tdata);
   build_udp_frame(eth_f , &npf ); // convert network_packet_frame_t to  eth_frame_t
   eda.data = (void *) eth_f;
-
-  PCAPFILE * pfl = lpcap_create("./pcaplibtestfile0.pcap");
-  for( i=0;i< PKTS_COUNT;i++ )
+////////////////////////////////////////
+  PCAPFILE * pfl = lpcap_create( test_file_names[0]);
+  for( i=0;i< test_count_packets[0];i++ )
   {
-      memset(tdata ,  i,sizeof(tdata));
+   uint32_t ts_time =time(NULL);
+      memset(tdata ,  test_vals[0]+i,sizeof(tdata));
+       npf.src_port = 3;
+      npf.dst_port = 3;
       build_udp_frame(eth_f , &npf ); // convert network_packet_frame_t to  eth_frame_t
       eda.data = (void *) eth_f;
-   lpcap_write_data( pfl , &eda , i, 0 );
+   lpcap_write_data( pfl , &eda , ts_time +(uint32_t)i, i );
   }
   lpcap_close_file( pfl );
 
-////////////////////////////////////////
+
  
 //////////////////////////////////////////
-  pfl = lpcap_create("./pcaplibtestfile1.pcap");
-  for( i=0;i< 10;i++ )
+  pfl = lpcap_create(test_file_names[1]);
+  for( i=0;i<test_count_packets[1];i++ )
   {
-      memset(tdata , 100+i,sizeof(tdata));
-      npf.src_port = 1;
-     npf.dst_port = 1;
+      uint32_t ts_time =time(NULL);
+      memset(tdata , test_vals[1]+i,sizeof(tdata));
+      npf.src_port = 2;
+      npf.dst_port = 2;
       build_udp_frame(eth_f , &npf ); // convert network_packet_frame_t to  eth_frame_t
       eda.data = (void *) eth_f;
-     lpcap_write_data( pfl , &eda , i*3 ,0);
+      lpcap_write_data( pfl , &eda , ts_time +(uint32_t)i ,(uint32_t)i);
   }
   lpcap_close_file( pfl );
+/////////////////////////////////////////////
 
+//////////////////////////////////////////
+  pfl = lpcap_create(test_file_names[2]);
+  for( i=0;i< test_count_packets[2];i++ )
+  {
+      uint32_t ts_time =time(NULL);
+      memset(tdata ,test_vals[2]+i ,sizeof(tdata));
+      npf.src_port = 1;
+      npf.dst_port = 1;
+      build_udp_frame(eth_f , &npf ); // convert network_packet_frame_t to  eth_frame_t
+      eda.data = (void *) eth_f;
+      lpcap_write_data( pfl , &eda , ts_time +(uint32_t)i ,(uint32_t)i);
+  }
+  lpcap_close_file( pfl );
+/////////////////////////////////////  
 
 #if 0
   PCAPFILE  * pfr = lpcap_open("./pcaplibtestfile.pcap");
@@ -376,3 +434,71 @@ int gen_test()
 #endif
  return 0;
 }
+
+int check_exists_data_out_file() // check contained all data
+{
+
+  int num_file = 0;
+  int i = 0;
+  int cnt_fl = sizeof(test_file_names)/sizeof(test_file_names[0]);
+  for(num_file = 0; num_file < cnt_fl; num_file++)
+  {
+   PCAPFILE  * pfr = lpcap_open(test_file_out);
+   pcap_hdr_t   phdr;
+   if( lpcap_read_header( pfr, &phdr ))
+   {
+  // print_hdr(&phdr);
+     int rese_rec_read = 0 ;
+      int val = test_vals[num_file];
+     pcaprec_hdr_and_data_t  p_rec_data;
+     do{   
+       rese_rec_read = lpcap_read_frame_record( pfr , &p_rec_data);
+       int finded_pos = -10;
+       eth_frame_t * eth_f = (eth_frame_t *)  p_rec_data.packet_data;
+        ip_packet_t *ip_f = (ip_packet_t *)eth_f->data;
+       udp_packet_t *udpp = (udp_packet_t * ) ip_f->data;
+       
+      
+       int count_success = 0;
+       short sz =  htons(udpp->len) -8;
+       for(i=0;i<sz;i++ )
+       {
+           uint8_t  ch_data= udpp->data[i];
+          // if(   (test_vals[num_file]) <=  ch_data  &&   (test_vals[num_file]+test_count_packets[num_file]) >=ch_data )
+           if(test_vals[num_file]+ test_res_count[num_file] == ch_data)
+           {
+              count_success++;
+           } 
+          else 
+              break;
+       }
+       if( count_success==0)  continue;
+       else
+       {
+           if( count_success==  sz )
+               test_res_count[num_file]++;
+               
+       }
+       val++;
+       //print_rec_hdr( &p_rec_data.pcp_rec_hdr);
+      }while(rese_rec_read>0);
+      lpcap_close_file(pfr);
+   } else return -1 * num_file;  
+     
+  }
+  int oktest = -1;
+   for(i=0;i < sizeof(test_count_packets)/sizeof(test_count_packets[0]);i++ )
+   {
+     if(test_res_count[i] == test_count_packets[i])
+     {
+        oktest = 0; 
+     }
+     else
+     {
+         oktest = -i;
+     }
+   }
+  
+  return oktest; 
+}
+ 

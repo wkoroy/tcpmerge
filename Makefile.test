@@ -1,13 +1,9 @@
 APP = ./tcpmerge
-CC=gcc -g -O0
+CC=gcc -g -O0  -DTCPMERGE_TEST=1
 CFLAGS=-ldl -lrt -lpthread -Wall -Wextra
 
 all: $(APP)
- 
 
-
-$(APPTEST): tcpmerge.o  pcap_file_generator.o pcap_file_reader.o utils.o
-	$(CC) tcpmerge.o pcap_file_generator.o pcap_file_reader.o utils.o -o $(APP) $(CFLAGS) -D TCPMERGE_TEST
 $(APP): tcpmerge.o  pcap_file_generator.o pcap_file_reader.o utils.o
 	$(CC) tcpmerge.o pcap_file_generator.o pcap_file_reader.o utils.o -o $(APP) $(CFLAGS)
 tcpmerge.o: tcpmerge.c	
@@ -23,4 +19,3 @@ utils.o: utils.c
 	$(CC) utils.c -c -Wall
 clean:
 	rm -f *.o ; rm $(APP)
-test: $(APPTEST)
