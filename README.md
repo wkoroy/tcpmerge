@@ -7,8 +7,11 @@ Files are combined into one by relative time, the relative time is counted accor
  
  #how to make
  cd ~/
+ 
  git clone https://github.com/wkoroy/tcpmerge
+ 
  cd ./tcpmerge
+ 
  make
  
  
