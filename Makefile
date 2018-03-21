@@ -1,6 +1,6 @@
 APP = ./tcpmerge
 CC=gcc -g -O0
-CFLAGS=-ldl -lrt -lpthread -Wall -Wextra
+CFLAGS=  -static -ldl -lrt -lpthread -Wall -Wextra
 
 all: $(APP)
  
@@ -22,5 +22,5 @@ pcap_file_reader.o: pcap_file_reader.c
 utils.o: utils.c
 	$(CC) utils.c -c -Wall
 clean:
-	rm -f *.o ; rm $(APP)
+	rm -f *.o ; rm $(APP);rm -f *~;
 test: $(APPTEST)

@@ -1,6 +1,6 @@
 APP = ./tcpmerge
 CC=gcc
-CFLAGS=-ldl -lrt -lpthread -Wall -Wextra
+CFLAGS= -static -ldl -lrt -lpthread -Wall -Wextra
 
 all: $(APP)
 
