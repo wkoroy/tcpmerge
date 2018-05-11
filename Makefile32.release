@@ -1,4 +1,4 @@
-APP = ./tcpmerge
+APP = ./tcpmerge32
 CC=gcc -m32
 CFLAGS=  -static -ldl -lrt -lpthread -Wall -Wextra -L./  -lpcap_file_generator
 
